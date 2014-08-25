@@ -14,7 +14,9 @@ module OmniAuth
       # This is where you pass the options you would pass when
       # initializing your consumer from the OAuth gem.
       option :client_options, {
-        :authorize_path => "/account/oauth2/authorize.html",
+        :site => "https://test-sensing.epsonconnect.com",
+        :authorize_url => "https://test-sensing.epsonconnect.com/account/oauth2/authorize.html",
+        :token_url => "https://test-api.sensing.epsonconnect.com/oauth2/auth/token",
         :scope=> "gps.run"
       }
 
