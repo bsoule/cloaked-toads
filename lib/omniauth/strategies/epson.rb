@@ -9,7 +9,7 @@ module OmniAuth
       # Give your strategy a name.
       option :name, "epson"
 
-      option :base_url, "https://test-sensing.epsonconnect.com" 
+      #option :base_url, "https://test-sensing.epsonconnect.com" 
 
       # This is where you pass the options you would pass when
       # initializing your consumer from the OAuth gem.
@@ -17,7 +17,7 @@ module OmniAuth
         :site => "https://test-sensing.epsonconnect.com",
         :authorize_url => "https://test-sensing.epsonconnect.com/account/oauth2/authorize.html",
         :token_url => "https://test-api.sensing.epsonconnect.com/oauth2/auth/token",
-        :scope=> "gps.run"
+        :callback_url=> "https://www.beeminder.com/auth/epson/callback"
       }
 
       # These are called after authentication has succeeded. If
@@ -40,8 +40,51 @@ module OmniAuth
       #  }
       #end
 
+      def callback_url
+        options.client_options[:callback_url] || super
+      end      
+
+
+      def request_phase
+        url = client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
+        log :info, url
+        log :info, callback_url
+        log :info, options.inspect
+        redirect url
+      end
+
+      def callback_phase
+        log :info, request.params.inspect
+        error = request.params['error_reason'] || request.params['error']
+        if error
+          log :info, request.params['error']
+          fail!(error, CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri']))
+        elsif !options.provider_ignores_state && (request.params['state'].to_s.empty? || request.params['state'] != session.delete('omniauth.state'))
+          log :info, "Fail! CSRF detected!"
+          fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
+        else
+          log :info, "success on request phase"
+          self.access_token = build_access_token
+          self.access_token = access_token.refresh! if access_token.expired?
+          log :info, self.access_token.inspect
+          super
+        end
+      rescue ::OAuth2::Error, CallbackError => e
+        log :info, "invalid credentials"
+        fail!(:invalid_credentials, e)
+      rescue ::MultiJson::DecodeError => e
+        log :info, "MultiJson decode error"
+        fail!(:invalid_response, e)
+      rescue ::Timeout::Error, ::Errno::ETIMEDOUT, Faraday::Error::TimeoutError => e
+        log :info, "Timeout error"
+        fail!(:timeout, e)
+      rescue ::SocketError, Faraday::Error::ConnectionFailed => e
+        log :info, "Timeout/Socket error"
+        fail!(:failed_to_connect, e)
+      end
+
       def raw_info
-        @raw_info ||= access_token.get('/api/v1/people/me.json').parsed
+        @raw_info #||= access_token.get('/api/v1/people/me.json').parsed
       end
     end
   end
