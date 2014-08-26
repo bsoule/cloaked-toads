@@ -47,26 +47,39 @@ module OmniAuth
 
       def request_phase
         url = client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
-        log :info, url
-        log :info, callback_url
+        log :info, "info! #{url}"
+        log :debug, "debug! #{url}"
+        puts "puts! #{url}"
         log :info, options.inspect
+        log :debug, options.inspect
+        puts options.inspect
         redirect url
       end
 
       def callback_phase
         log :info, request.params.inspect
+        log :debug, request.params.inspect
+        puts request.params.inspect
         error = request.params['error_reason'] || request.params['error']
         if error
           log :info, request.params['error']
+          log :debug, request.params['error']
+          puts request.params['error']
           fail!(error, CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri']))
         elsif !options.provider_ignores_state && (request.params['state'].to_s.empty? || request.params['state'] != session.delete('omniauth.state'))
           log :info, "Fail! CSRF detected!"
+          log :debug, "Fail! CSRF detected!"
+          puts "Fail! CSRF detected!"
           fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
           log :info, "success on request phase"
+          log :debug, "success on request phase"
+          puts "success on request phase"
           self.access_token = build_access_token
           self.access_token = access_token.refresh! if access_token.expired?
           log :info, self.access_token.inspect
+          log :debug, self.access_token.inspect
+          puts self.access_token.inspect
           super
         end
       rescue ::OAuth2::Error, CallbackError => e
