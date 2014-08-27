@@ -8,6 +8,7 @@ module OmniAuth
 
       # Give your strategy a name.
       option :name, "epson"
+      option :provider_ignores_state, false
 
       #option :base_url, "https://test-sensing.epsonconnect.com" 
 
@@ -34,29 +35,38 @@ module OmniAuth
         }
       end
 
-      #extra do
-      #  {
-      #    'raw_info' => raw_info
-      #  }
-      #end
+      extra do
+        {
+          'raw_info' => raw_info
+        }
+      end
 
       def callback_url
         options.client_options[:callback_url] || super
       end      
+      
+      def authorize_params
+        options.authorize_params[:state] = SecureRandom.hex(24)
+        params = options.authorize_params.merge(options.authorize_options.inject({}){|h,k| h[k.to_sym] = options[k] if options[k]; h})
+        session['omniauth.state'] = params[:state]
+        params
+      end 
 
 
       def request_phase
         url = client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
-        #redirect "/auth/failure?message=nonono&strategy=yourmom" 
         redirect url
       end
 
       def callback_phase
-        env['debugging-omniauth-errors'] = request.params
         error = request.params['error_reason'] || request.params['error']
         if error
           fail!(error, CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri']))
-        elsif !options.provider_ignores_state && (request.params['state'].to_s.empty? || request.params['state'] != session.delete('omniauth.state'))
+        elsif ( !options.provider_ignores_state && 
+              ( request.params['state'].to_s.empty? || 
+                request.params['state'] != session.delete('omniauth.state')
+              ) 
+        )
           fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
           self.access_token = build_access_token
