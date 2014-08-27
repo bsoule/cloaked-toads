@@ -52,7 +52,7 @@ module OmniAuth
       end
 
       def callback_phase
-        session[:omniauth][:error] = request.params
+        env['debugging-omniauth-errors'] = request.params
         error = request.params['error_reason'] || request.params['error']
         if error
           fail!(error, CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri']))
