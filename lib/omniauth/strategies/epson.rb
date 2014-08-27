@@ -59,16 +59,17 @@ module OmniAuth
       end
 
       def callback_phase
-        error = request.params['error_reason'] || request.params['error']
-        if error
+        state = session.delete('omniauth.state')
+        if request.params['error_reason'] || request.params['error']
           fail!(error, CallbackError.new(request.params['error'], request.params['error_description'] || request.params['error_reason'], request.params['error_uri']))
         elsif ( !options.provider_ignores_state && 
               ( request.params['state'].to_s.empty? || 
-                request.params['state'] != session.delete('omniauth.state')
+                request.params['state'] != state 
               ) 
         )
           fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
+          options.token_params[:state] = state
           self.access_token = build_access_token
           self.access_token = access_token.refresh! if access_token.expired?
           super
@@ -86,6 +87,19 @@ module OmniAuth
       def raw_info
         @raw_info #||= access_token.get('/api/v1/people/me.json').parsed
       end
+
+    protected
+      # v1.0.2
+      #def build_access_token
+      #  verifier = request.params['code']
+      #  client.auth_code.get_token( verifier, { :redirect_uri => callback_url }.merge(token_params.to_hash(:symbolize_keys => true)))
+      #end
+      # v1.1.2
+      def build_access_token
+        verifier = request.params['code']
+        client.auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)))
+      end
+
     end
   end
 end
