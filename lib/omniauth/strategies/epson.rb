@@ -10,10 +10,11 @@ module OmniAuth
       option :name, "epson"
       option :provider_ignores_state, false
 
-      #option :base_url, "https://test-sensing.epsonconnect.com" 
+      option :token_params, {
+        :token_method => :post,
+        :grant_type => "authorization_code"
+      }
 
-      # This is where you pass the options you would pass when
-      # initializing your consumer from the OAuth gem.
       option :client_options, {
         :site => "https://test-sensing.epsonconnect.com",
         :authorize_url => "https://test-sensing.epsonconnect.com/account/oauth2/authorize.html",
@@ -69,7 +70,6 @@ module OmniAuth
         )
           fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
-          options.token_params[:state] = state
           self.access_token = build_access_token
           self.access_token = access_token.refresh! if access_token.expired?
           super
@@ -89,11 +89,6 @@ module OmniAuth
       end
 
     protected
-      # v1.0.2
-      #def build_access_token
-      #  verifier = request.params['code']
-      #  client.auth_code.get_token( verifier, { :redirect_uri => callback_url }.merge(token_params.to_hash(:symbolize_keys => true)))
-      #end
       # v1.1.2
       def build_access_token
         verifier = request.params['code']
