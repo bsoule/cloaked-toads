@@ -19,7 +19,6 @@ module OmniAuth
         :site => "https://test-sensing.epsonconnect.com",
         :authorize_url => "https://test-sensing.epsonconnect.com/account/oauth2/authorize.html",
         :token_url => "https://test-api.sensing.epsonconnect.com/oauth2/auth/token",
-        :callback_url=> "https://www.beeminder.com/auth/epson/callback"
       }
 
       # These are called after authentication has succeeded. If
@@ -27,20 +26,17 @@ module OmniAuth
       # additional calls (if the user id is returned with the token
       # or as a URI parameter). This may not be possible with all
       # providers.
-      uid{ raw_info['id'] }
-
-      info do
-        {
-          :name => raw_info['name'],
-          :email => raw_info['email']
-        }
+      uid do
+        raw_info["subject_id"]
       end
 
-      extra do
-        {
-          'raw_info' => raw_info
-        }
-      end
+      #info do
+      #  {}
+      #end
+
+      #extra do
+      #  {}
+      #end
 
       def callback_url
         options.client_options[:callback_url] || super
@@ -70,8 +66,6 @@ module OmniAuth
         )
           fail!(:csrf_detected, CallbackError.new(:csrf_detected, 'CSRF detected'))
         else
-          self.access_token = build_access_token
-          self.access_token = access_token.refresh! if access_token.expired?
           super
         end
       rescue ::OAuth2::Error, CallbackError => e
@@ -85,14 +79,21 @@ module OmniAuth
       end
 
       def raw_info
-        @raw_info #||= access_token.get('/api/v1/people/me.json').parsed
+        @raw_info ||= access_token.params
       end
 
     protected
       # v1.1.2
       def build_access_token
-        verifier = request.params['code']
-        client.auth_code.get_token(verifier, {:redirect_uri => callback_url}.merge(token_params.to_hash(:symbolize_keys => true)))
+        client.auth_code.get_token(
+          request.params['code'], {
+            :redirect_uri => callback_url,
+            :headers => {
+              "Authorization" => 
+              "Basic " + 
+              Base64.strict_encode64("#{client.id}:#{client.secret}")
+            }
+          }.merge( token_params.to_hash(:symbolize_keys => true) ))
       end
 
     end
