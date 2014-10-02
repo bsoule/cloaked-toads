@@ -17,8 +17,6 @@ module OmniAuth
 
       option :client_options, {
         :site => "https://test-sensing.epsonconnect.com",
-        :authorize_url => "https://test-sensing.epsonconnect.com/account/oauth2/authorize.html",
-        :token_url => "https://test-api.sensing.epsonconnect.com/oauth2/auth/token",
       }
 
       # These are called after authentication has succeeded. If
@@ -29,14 +27,6 @@ module OmniAuth
       uid do
         raw_info["subject_id"]
       end
-
-      #info do
-      #  {}
-      #end
-
-      #extra do
-      #  {}
-      #end
 
       def callback_url
         options.client_options[:callback_url] || super
