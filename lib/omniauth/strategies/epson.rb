@@ -41,8 +41,10 @@ module OmniAuth
 
 
       def request_phase
-        url = client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(authorize_params))
-        redirect url
+        ap = authorize_params
+        scope = ap.delete :scope
+        url = client.auth_code.authorize_url({:redirect_uri => callback_url}.merge(ap))
+        redirect url+"&scope=#{scope}"
       end
 
       def callback_phase
