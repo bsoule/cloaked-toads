@@ -36,6 +36,7 @@ module OmniAuth
         options.authorize_params[:state] = SecureRandom.hex(24)
         params = options.authorize_params.merge(options.authorize_options.inject({}){|h,k| h[k.to_sym] = options[k] if options[k]; h})
         session['omniauth.state'] = params[:state]
+puts session['omniauth.state']
         params
       end 
 
@@ -47,6 +48,7 @@ module OmniAuth
         redirect url+"&scope=#{scope}"
       end
 
+=begin # removing this on Feb 24th:
       def callback_phase
         state = session.delete('omniauth.state')
         if request.params['error_reason'] || request.params['error']
@@ -69,6 +71,7 @@ module OmniAuth
       rescue ::SocketError, Faraday::Error::ConnectionFailed => e
         fail!(:failed_to_connect, e)
       end
+=end
 
       def raw_info
         @raw_info ||= access_token.params

@@ -1,5 +1,5 @@
 module Omniauth
   module Epson 
-    VERSION = "0.1.9"  
+    VERSION = "0.2"  
   end
 end
