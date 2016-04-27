@@ -29,7 +29,7 @@ module OmniAuth
       end
 
       def callback_url
-        options.client_options[:callback_url] || super
+        options.client_options[:callback_url] || (full_host + script_name + callback_path)
       end      
       
       def authorize_params
